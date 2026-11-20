@@ -1,0 +1,16 @@
+{
+  "name": "zip-codec",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build:web": "node scripts/build-web.mjs"
+  },
+  "devDependencies": {
+    "adm-zip": "0.6.1",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.9"
+  }
+}
