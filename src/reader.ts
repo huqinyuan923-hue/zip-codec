@@ -398,7 +398,11 @@ function readEntry(u8: Uint8Array, e: EntryRec): Uint8Array {
   } else {
     // 预分配提示按登记值，但封顶——损坏档案的 0xFFFFFFFF 登记值不该触发 4GB 分配
     const hint = Math.min(e.size, 256 * 1024 * 1024);
-    out = inflate(compressed, hint);
+    try {
+      out = inflate(compressed, hint);
+    } catch (err) {
+      throw new ZipError('BAD_DATA', `条目 "${e.name}" deflate 解压失败：${(err as Error).message}`);
+    }
   }
 
   if (out.length !== e.size) {

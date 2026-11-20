@@ -1,0 +1,84 @@
+{
+  "items": [
+    {
+      "name": "express-master.zip",
+      "url": "https://codeload.github.com/expressjs/express/zip/refs/heads/master",
+      "license": "MIT",
+      "bytes": 218077,
+      "sha256": "d70de93f86fd9508582d10803924868d8cfcc2f2c77556418356b9334f6796b7",
+      "big": false
+    },
+    {
+      "name": "requests-v2.31.0.zip",
+      "url": "https://codeload.github.com/psf/requests/zip/refs/tags/v2.31.0",
+      "license": "Apache-2.0",
+      "bytes": 4059197,
+      "sha256": "d7e3dff3cc433b88c93a4fc585736220c6c6a4257d357d48ba6a3e3f1c29a75d",
+      "big": false
+    },
+    {
+      "name": "is-v5.0.0.zip",
+      "url": "https://codeload.github.com/sindresorhus/is/zip/refs/tags/v5.0.0",
+      "license": "MIT",
+      "bytes": 960891,
+      "sha256": "96d47ef05a2b849c98aa0ec1824f10a5932968ca49201ee64172c260e30dc1ee",
+      "big": false
+    },
+    {
+      "name": "lite-master.zip",
+      "url": "https://codeload.github.com/rxi/lite/zip/refs/heads/master",
+      "license": "MIT",
+      "bytes": 10994478,
+      "sha256": "db983844656712d8f2270ca2eeb481418192273583b396ac7ab90cc46c304926",
+      "big": false
+    },
+    {
+      "name": "sqlite-tools-win-x64-3450100.zip",
+      "url": "https://www.sqlite.org/2024/sqlite-tools-win-x64-3450100.zip",
+      "license": "public-domain",
+      "bytes": 5002880,
+      "sha256": "40424b3d8012786a2c497e695703a60499c35972a93ecf3db2ca3876fbaf224f",
+      "big": false
+    },
+    {
+      "name": "newtonsoft-json-13.0.3.nupkg",
+      "url": "https://api.nuget.org/v3-flatcontainer/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg",
+      "license": "MIT",
+      "bytes": 2441966,
+      "sha256": "872fc189e638ab1056555b03aaa38f68bcb54286e221aa646eb1129babf63c77",
+      "big": false
+    },
+    {
+      "name": "commons-lang3-3.14.0.jar",
+      "url": "https://repo1.maven.org/maven2/org/apache/commons/commons-lang3/3.14.0/commons-lang3-3.14.0.jar",
+      "license": "Apache-2.0",
+      "bytes": 657952,
+      "sha256": "7b96bf3ee68949abb5bc465559ac270e0551596fa34523fddf890ec418dde13c",
+      "big": false
+    },
+    {
+      "name": "certifi-2024.2.2-py3-none-any.whl",
+      "url": "pypi-resolve",
+      "license": "MPL-2.0",
+      "bytes": 163774,
+      "sha256": "dc383c07b76109f368f6106eee2b593b04a011ea4d55f652c6ca24a754d1cdd1",
+      "big": false
+    },
+    {
+      "name": "ripgrep-14.1.0-win64.zip",
+      "url": "https://github.com/BurntSushi/ripgrep/releases/download/14.1.0/ripgrep-14.1.0-x86_64-pc-windows-msvc.zip",
+      "license": "MIT",
+      "bytes": 2020417,
+      "sha256": "fe4f75edfaa50f0d4fecbf47696b7629f3449c9c2c5a4da828753139e5a2e203",
+      "big": true
+    },
+    {
+      "name": "node-v20.12.0-win-x64.zip",
+      "url": "https://nodejs.org/dist/v20.12.0/node-v20.12.0-win-x64.zip",
+      "license": "MIT",
+      "bytes": 29510553,
+      "sha256": "85db3df652459e380edbbc57973c00c1e15626d354a9ae6ddfc45d27cc573584",
+      "big": true
+    }
+  ]
+}
