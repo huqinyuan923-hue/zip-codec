@@ -3,3 +3,6 @@ dist/
 .mimosa/
 .tmp/
 tests/fixtures/big/
+# 差分 2 语料中 >5MB 的（开源许可但体积大；manifest 仍入库，fetch-corpus 可重建）
+tests/fixtures/real/lite-master.zip
+tests/fixtures/real/node-v20.12.0-win-x64.zip
