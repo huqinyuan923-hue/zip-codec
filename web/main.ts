@@ -18,7 +18,8 @@ const repackBtn = $('repack') as HTMLButtonElement;
 const statusEl = $('status');
 
 interface EntryNode {
-  name: string;          // 全路径（目录含尾斜杠）
+  name: string;          // 全路径（目录一律含尾斜杠）
+  isDir: boolean;        // 显式目录标记（虚拟中间层也是目录）
   entry: ZipEntryDetail | null; // 目录虚拟节点为 null
   children: Map<string, EntryNode>;
   checked: boolean;
@@ -28,21 +29,30 @@ let current: Uint8Array | null = null;
 let currentNames: string[] = [];
 let selectedPath: string | null = null;
 let objectUrl: string | null = null;
+let treeRoot: EntryNode | null = null; // 单一树实例：勾选状态只在这里维护
 
-/** 按 '/' 分段构建树；同时补齐中间虚拟目录。 */
+/** 按 '/' 分段构建树；中间虚拟目录显式标记 isDir 且名字补尾斜杠，
+ *  与真实目录条目（'dir/'）合并为同一节点。 */
 function buildTree(entries: ZipEntryDetail[]): EntryNode {
-  const root: EntryNode = { name: '', entry: null, children: new Map(), checked: false };
+  const root: EntryNode = { name: '', isDir: true, entry: null, children: new Map(), checked: false };
   for (const e of entries) {
-    const isDir = e.name.endsWith('/');
+    const isDirEntry = e.name.endsWith('/');
     const segs = e.name.split('/').filter((s) => s.length > 0);
     let node = root;
     for (let i = 0; i < segs.length; i++) {
       const last = i === segs.length - 1;
-      const seg = segs[i]! + (last && isDir ? '/' : '');
-      let child = node.children.get(seg);
+      const isDirNode = last ? isDirEntry : true;
+      const key = segs[i]! + (isDirNode ? '/' : '');
+      let child = node.children.get(key);
       if (child === undefined) {
-        child = { name: segs.slice(0, i + 1).join('/') + (last && isDir ? '/' : ''), entry: null, children: new Map(), checked: false };
-        node.children.set(seg, child);
+        child = {
+          name: segs.slice(0, i + 1).join('/') + (isDirNode ? '/' : ''),
+          isDir: isDirNode,
+          entry: null,
+          children: new Map(),
+          checked: false,
+        };
+        node.children.set(key, child);
       }
       if (last) child.entry = e;
       node = child;
@@ -60,75 +70,73 @@ function fmtSize(n: number): string {
 
 function renderTree(root: EntryNode): void {
   treeEl.textContent = '';
+  treeEl.appendChild(renderLevel(root, 0, true));
+}
+
+/** 渲染一层节点（返回本层 fragment；子层展开时递归挂载，保证结构完整）。 */
+function renderLevel(node: EntryNode, depth: number, open: boolean): DocumentFragment {
   const frag = document.createDocumentFragment();
+  const kids = [...node.children.values()].sort((a, b) => {
+    const da = a.name.endsWith('/') ? 0 : 1;
+    const db = b.name.endsWith('/') ? 0 : 1;
+    return da - db || a.name.localeCompare(b.name);
+  });
+  for (const child of kids) {
+    const isDir = child.isDir;
+    const wrap = document.createElement('div');
+    wrap.className = 'node';
+    const row = document.createElement('div');
+    row.className = 'row' + (isDir ? ' dir' : '') + (selectedPath === child.name ? ' sel' : '');
+    row.style.paddingLeft = `${8 + depth * 16}px`;
 
-  const walk = (node: EntryNode, depth: number, open: boolean): void => {
-    const kids = [...node.children.values()].sort((a, b) => {
-      const da = a.name.endsWith('/') ? 0 : 1;
-      const db = b.name.endsWith('/') ? 0 : 1;
-      return da - db || a.name.localeCompare(b.name);
+    const tw = document.createElement('span');
+    tw.className = 'tw';
+    tw.textContent = isDir ? (open ? '▾' : '▸') : '';
+    row.appendChild(tw);
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = child.checked;
+    cb.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      setChecked(child, cb.checked);
     });
-    for (const child of kids) {
-      const isDir = child.name.endsWith('/');
-      const wrap = document.createElement('div');
-      wrap.className = 'node';
-      const row = document.createElement('div');
-      row.className = 'row' + (isDir ? ' dir' : '') + (selectedPath === child.name ? ' sel' : '');
-      row.style.paddingLeft = `${8 + depth * 16}px`;
+    row.appendChild(cb);
 
-      const tw = document.createElement('span');
-      tw.className = 'tw';
-      tw.textContent = isDir ? (open ? '▾' : '▸') : '';
-      row.appendChild(tw);
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = isDir ? child.name.slice(0, -1).split('/').pop() + '/' : child.name.split('/').pop()!;
+    row.appendChild(name);
 
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.checked = child.checked;
-      cb.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        setChecked(child, cb.checked);
-        row.querySelector('input')!.checked = cb.checked;
-      });
-      row.appendChild(cb);
-
-      const name = document.createElement('span');
-      name.className = 'name';
-      name.textContent = isDir ? child.name.slice(0, -1).split('/').pop() + '/' : child.name.split('/').pop()!;
-      row.appendChild(name);
-
-      const sz = document.createElement('span');
-      sz.className = 'sz';
-      if (child.entry !== null) {
-        sz.textContent = `${fmtSize(child.entry.size)} · m${child.entry.method}`;
-        if (child.entry.size !== child.entry.compressedSize) {
-          sz.textContent += ` ←${fmtSize(child.entry.compressedSize)}`;
-        }
+    const sz = document.createElement('span');
+    sz.className = 'sz';
+    if (child.entry !== null) {
+      sz.textContent = `${fmtSize(child.entry.size)} · m${child.entry.method}`;
+      if (child.entry.size !== child.entry.compressedSize) {
+        sz.textContent += ` ←${fmtSize(child.entry.compressedSize)}`;
       }
-      row.appendChild(sz);
-
-      let expanded = open;
-      row.addEventListener('click', () => {
-        if (isDir) {
-          expanded = !expanded;
-          wrap.replaceChildren();
-          const inner = document.createDocumentFragment();
-          inner.appendChild(row);
-          if (expanded) walk(child, depth + 1, true);
-          wrap.appendChild(inner);
-        } else {
-          selectedPath = child.name;
-          document.querySelectorAll('.row.sel').forEach((el) => el.classList.remove('sel'));
-          row.classList.add('sel');
-          void preview(child.entry!);
-        }
-      });
-      wrap.appendChild(row);
-      if (isDir && open) walk(child, depth + 1, true);
-      frag.appendChild(wrap);
     }
-  };
-  walk(root, 0, true);
-  treeEl.appendChild(frag);
+    row.appendChild(sz);
+
+    let expanded = open;
+    row.addEventListener('click', () => {
+      if (isDir) {
+        expanded = !expanded;
+        tw.textContent = expanded ? '▾' : '▸';
+        wrap.replaceChildren(row);
+        if (expanded) wrap.appendChild(renderLevel(child, depth + 1, true));
+      } else {
+        selectedPath = child.name;
+        document.querySelectorAll('.row.sel').forEach((el) => el.classList.remove('sel'));
+        row.classList.add('sel');
+        void preview(child.entry!);
+      }
+    });
+    wrap.appendChild(row);
+    if (isDir && open) wrap.appendChild(renderLevel(child, depth + 1, true));
+    frag.appendChild(wrap);
+  }
+  return frag;
 }
 
 function setChecked(node: EntryNode, v: boolean): void {
@@ -217,9 +225,9 @@ function onFile(bytes: Uint8Array, label: string): void {
       `<span class="chip">解析 ${ms}ms</span>` +
       (zip.archiveComment ? `<br>注释：${escapeHtml(zip.archiveComment)}` : '');
     selectedPath = null;
-    const root = buildTree(zip.entriesDetail);
-    for (const c of root.children.values()) setChecked(c, true);
-    renderTree(root);
+    treeRoot = buildTree(zip.entriesDetail);
+    for (const c of treeRoot.children.values()) setChecked(c, true);
+    renderTree(treeRoot);
     allCb.checked = true;
     repackBtn.disabled = false;
     setStatus(`解析成功：${zip.entriesDetail.length} 条目，${ms}ms`);
@@ -256,17 +264,15 @@ drop.addEventListener('drop', (e) => {
 });
 
 allCb.addEventListener('change', () => {
-  if (current === null) return;
-  const root = buildTree((window.__zip as ReturnType<typeof readZipDetail>).entriesDetail);
-  for (const c of root.children.values()) setChecked(c, allCb.checked);
-  renderTree(root);
+  if (treeRoot === null) return;
+  for (const c of treeRoot.children.values()) setChecked(c, allCb.checked);
+  renderTree(treeRoot);
 });
 
 repackBtn.addEventListener('click', () => {
-  if (current === null) return;
-  const root = buildTree((window.__zip as ReturnType<typeof readZipDetail>).entriesDetail);
+  if (treeRoot === null) return;
   const names: string[] = [];
-  collectChecked(root, names);
+  collectChecked(treeRoot, names);
   if (names.length === 0) { setStatus('未选中条目', true); return; }
   try {
     const t0 = performance.now();
